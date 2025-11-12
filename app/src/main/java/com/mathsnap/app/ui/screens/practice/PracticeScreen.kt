@@ -1,5 +1,6 @@
 package com.mathsnap.app.ui.screens.practice
 
+import android.Manifest
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
@@ -16,14 +17,20 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.google.accompanist.permissions.ExperimentalPermissionsApi
+import com.google.accompanist.permissions.isGranted
+import com.google.accompanist.permissions.rememberPermissionState
+import com.mathsnap.app.util.VoiceInputHelper
+import com.mathsnap.app.util.rememberVoiceInputHelper
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalPermissionsApi::class)
 @Composable
 fun PracticeScreen(
     operation: String,
@@ -33,6 +40,22 @@ fun PracticeScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val newBadges by viewModel.newBadges.collectAsState()
+
+    // Voice input state
+    var isListening by remember { mutableStateOf(false) }
+    var voiceError by remember { mutableStateOf<String?>(null) }
+    val voiceInputHelper = rememberVoiceInputHelper()
+    val context = LocalContext.current
+
+    // Audio permission
+    val audioPermissionState = rememberPermissionState(Manifest.permission.RECORD_AUDIO)
+
+    // Cleanup voice helper when leaving screen
+    DisposableEffect(Unit) {
+        onDispose {
+            voiceInputHelper.destroy()
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -98,12 +121,59 @@ fun PracticeScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Answer Input
-            AnswerInput(
+            // Answer Input with Voice Button
+            AnswerInputWithVoice(
                 answer = uiState.userAnswer,
                 onAnswerChange = viewModel::updateAnswer,
-                enabled = !uiState.showFeedback
+                enabled = !uiState.showFeedback,
+                isListening = isListening,
+                onVoiceClick = {
+                    if (audioPermissionState.status.isGranted) {
+                        if (!isListening) {
+                            isListening = true
+                            voiceError = null
+                            voiceInputHelper.startListening(
+                                onResult = { number ->
+                                    viewModel.updateAnswer(number)
+                                    isListening = false
+                                },
+                                onError = { error ->
+                                    voiceError = error
+                                    isListening = false
+                                }
+                            )
+                        } else {
+                            voiceInputHelper.stopListening()
+                            isListening = false
+                        }
+                    } else {
+                        audioPermissionState.launchPermissionRequest()
+                    }
+                }
             )
+
+            // Voice error message
+            AnimatedVisibility(
+                visible = voiceError != null,
+                enter = fadeIn() + expandVertically(),
+                exit = fadeOut() + shrinkVertically()
+            ) {
+                voiceError?.let { error ->
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.errorContainer
+                        )
+                    ) {
+                        Text(
+                            text = "🎤 $error",
+                            modifier = Modifier.padding(12.dp),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onErrorContainer
+                        )
+                    }
+                }
+            }
 
             // Hint
             AnimatedVisibility(
@@ -224,25 +294,65 @@ fun ProblemCard(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AnswerInput(
+fun AnswerInputWithVoice(
     answer: String,
     onAnswerChange: (String) -> Unit,
-    enabled: Boolean
+    enabled: Boolean,
+    isListening: Boolean,
+    onVoiceClick: () -> Unit
 ) {
-    OutlinedTextField(
-        value = answer,
-        onValueChange = onAnswerChange,
+    Row(
         modifier = Modifier.fillMaxWidth(),
-        label = { Text("Your Answer") },
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-        enabled = enabled,
-        textStyle = MaterialTheme.typography.headlineMedium.copy(
-            textAlign = TextAlign.Center,
-            fontWeight = FontWeight.Bold
-        ),
-        singleLine = true,
-        shape = RoundedCornerShape(16.dp)
-    )
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        OutlinedTextField(
+            value = answer,
+            onValueChange = onAnswerChange,
+            modifier = Modifier.weight(1f),
+            label = { Text("Your Answer") },
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            enabled = enabled,
+            textStyle = MaterialTheme.typography.headlineMedium.copy(
+                textAlign = TextAlign.Center,
+                fontWeight = FontWeight.Bold
+            ),
+            singleLine = true,
+            shape = RoundedCornerShape(16.dp)
+        )
+
+        // Voice Input Button
+        FloatingActionButton(
+            onClick = onVoiceClick,
+            modifier = Modifier.size(64.dp),
+            containerColor = if (isListening)
+                MaterialTheme.colorScheme.error
+            else
+                MaterialTheme.colorScheme.secondaryContainer,
+            elevation = FloatingActionButtonDefaults.elevation(
+                defaultElevation = if (isListening) 8.dp else 4.dp
+            )
+        ) {
+            // Animated icon
+            val scale by animateFloatAsState(
+                targetValue = if (isListening) 1.2f else 1f,
+                animationSpec = repeating(
+                    animation = tween(500),
+                    repeatMode = RepeatMode.Reverse
+                )
+            )
+
+            Icon(
+                imageVector = Icons.Default.Mic,
+                contentDescription = if (isListening) "Listening..." else "Voice Input",
+                modifier = Modifier.scale(scale),
+                tint = if (isListening)
+                    MaterialTheme.colorScheme.onError
+                else
+                    MaterialTheme.colorScheme.onSecondaryContainer
+            )
+        }
+    }
 }
 
 @Composable

@@ -16,7 +16,7 @@
 - **Progressive Difficulty**: Easy → Medium → Hard → Expert levels
 - **Daily Challenges**: Fresh problems every day to maintain streaks
 - **Offline-First**: Full functionality without internet using Room database
-- **Voice Input**: Answer problems using speech recognition
+- **🎤 Voice Input**: Hands-free answer entry - speak your answer and it automatically fills the input field (no manual typing needed!)
 - **Performance Tracking**: Detailed statistics and progress visualization
 
 ### Gamification
@@ -29,9 +29,10 @@
 ### User Experience
 - **Material 3 Design**: Premium, modern UI following Google's latest design guidelines
 - **Dark/Light Themes**: Automatic or manual theme switching
-- **Kid-Friendly Mode**: Larger buttons, playful interface, avatar selection
+- **Kid-Friendly Mode**: Larger buttons, playful interface, avatar selection - perfect for voice input!
 - **Smooth Animations**: Delightful transitions and feedback animations
 - **Instant Feedback**: Real-time answer validation with hints
+- **Hands-Free Practice**: Animated microphone button with visual listening feedback
 
 ### Monetization
 - **Free Tier**: Full basic functionality with ads
@@ -139,7 +140,11 @@ cd Math-Snap
 - Replace test ad unit IDs in `AdManager.kt` and `AdBanner.kt`
 - Update `AndroidManifest.xml` with your AdMob App ID
 
-4. **Build and Run**
+4. **Grant Microphone Permission**
+- For voice input functionality, allow microphone access when prompted
+- Can be configured later in device settings
+
+5. **Build and Run**
 ```bash
 ./gradlew assembleDebug
 ```
@@ -150,6 +155,39 @@ or use Android Studio's Run button
 ./gradlew test
 ./gradlew connectedAndroidTest
 ```
+
+## 🎤 Voice Input Feature
+
+### Automatic Voice Answer Entry
+One of MathSnap's standout features is **hands-free voice input**:
+
+**How It Works:**
+1. **Tap the animated microphone button** 🎤 next to the answer field
+2. **Speak your answer** clearly (e.g., "fifteen", "42", "one hundred")
+3. **Watch the magic** - your answer automatically fills the input field
+4. **Submit** when ready - no manual typing needed!
+
+**Visual Feedback:**
+- 🎤 **Gray mic icon** = Ready to listen
+- 🎤 **Red pulsing icon** = Actively listening to your voice
+- ✅ **Number appears** = Voice successfully recognized
+- ❌ **Error message** = Recognition failed (try again)
+
+**Perfect For:**
+- 👶 **Kids** learning to count who can't type yet
+- 🚗 **Busy parents** practicing with children
+- ♿ **Accessibility** - great for users with motor difficulties
+- 🎮 **Gamification** - makes math practice more interactive and fun
+
+**Smart Recognition:**
+- Converts spoken numbers to digits automatically
+- Handles various accents and speaking styles
+- Supports number words ("fifteen") and digits ("15")
+- Real-time error feedback if speech unclear
+
+**Privacy:** All voice processing happens via Android's built-in speech recognition. No audio is stored or sent to MathSnap servers.
+
+📖 For detailed usage guide, see [VOICE_INPUT_GUIDE.md](VOICE_INPUT_GUIDE.md)
 
 ## 📱 App Flow
 
@@ -164,7 +202,7 @@ or use Android Studio's Run button
        ▼
 ┌──────────────┐
 │Practice Mode │ ──> Generate Problem
-│              │ ──> Answer Input (Text/Voice)
+│              │ ──> Answer Input (Text/🎤 Voice)
 │  - Problem   │ ──> Instant Feedback
 │  - Timer     │ ──> Hints
 │  - Streak    │ ──> Badge Unlocks
