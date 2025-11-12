@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(gradle assembleDebug:*)",
+      "Bash(gradle installDebug:*)",
+      "Bash(adb install:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
